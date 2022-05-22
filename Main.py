@@ -130,9 +130,9 @@ class Main():
         if self.therm_1.is_active and self.therm_2.is_active:
             t1 = self.therm_1.values[1]
             t2 = self.therm_2.values[1]
-            if abs(self.virtual_t - t2) > config['max_delta']: # отказ t2
+            if abs(self.virtual_t - t2) > float(config['max_delta']): # отказ t2
                 self.virtual_t = t1
-            elif abs(self.virtual_t - t1) > config['max_delta']: # отказ t2
+            elif abs(self.virtual_t - t1) > float(config['max_delta']): # отказ t2
                 self.virtual_t = t2
             else:
 
