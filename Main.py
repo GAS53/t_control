@@ -93,11 +93,11 @@ class Main():
             t = self.calculate_t()
             print(f'итоговая температура {t}')
             if not self.temp_t:
-                if t >= config['heat']: # начинать охлаждение
+                if t >= float(config['heat']): # начинать охлаждение
                     self.temp_t = config['cold'] + 1
                     self.gpio_control(config['cold_pin'])
 
-                elif t <= config['cold']: # начинать нагрев
+                elif t <= float(config['cold']): # начинать нагрев
                     self.temp_t = config['heat'] - 1
                     self.gpio_control(config['heart_pin'])
 
@@ -112,6 +112,7 @@ class Main():
 
 
     def gpio_control(self, pin, is_start=True):
+        pin = int(pin)
         print(f'use pin: {pin}')
         if is_start:
             GPIO.setup(pin, GPIO.OUT, initial=GPIO.HIGH)
