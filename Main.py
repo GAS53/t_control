@@ -85,6 +85,8 @@ class Main():
 
     def run(self):
         test_count = 0
+        self.therm_1.get_temperature()
+        self.therm_2.get_temperature()
         while test_count<5:
             test_count += 1
             time.sleep(1)
