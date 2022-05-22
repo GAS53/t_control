@@ -68,7 +68,7 @@ class Thermocupe():
 
     def check_delta(self):
         delta = self.get_delta()
-        if delta > config['max_delta']:
+        if delta > float(config['max_delta']):
             messager(self.name, 'перепад температуры больше максимального разового отключение термопары', -1)
             self.is_active = False
         else:
