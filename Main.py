@@ -127,6 +127,8 @@ class Main():
         print(f'полученные температуры t1 {t1} t2 {t2}')
         self.therm_1.check()
         self.therm_2.check()
+        if self.virtual_t == None:
+            self.virtual_t = (t1 + t2) / 2
         if self.therm_1.is_active and self.therm_2.is_active:
             t1 = self.therm_1.values[1]
             t2 = self.therm_2.values[1]
