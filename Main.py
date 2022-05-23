@@ -6,12 +6,14 @@ from accessory import get_config
 import os
 import RPi.GPIO as GPIO
 GPIO.setwarnings(False)
+GPIO.cleanup()
 
 message_di = defaultdict(int)
 config = get_config()
 
 
 def messager(name, message, digit):
+    print(f'digit {digit} type {type(digit)}')
     if digit > 0:
         if message_di[message] == 0 :
             message_di[message] +=1
@@ -25,6 +27,7 @@ def messager(name, message, digit):
             print(f'{datetime.now()} {name} {message}')
         else:
             print(f'это тестовый блок else \n {name} {message}')
+    print(message_di)
 
 class Thermocupe():
     def __init__(self, name):
@@ -70,7 +73,7 @@ class Thermocupe():
             self.is_active = False
         else:
             self.is_active = True
-            print(f'{self.name} перепад в норме {delta} - посравнивать между собой')
+            # print(f'{self.name} перeепад в норме {delta} - посравнивать между собой')
 
 class Main():
     def __init__(self):
@@ -87,7 +90,14 @@ class Main():
         while True:
             time.sleep(1)
             t = self.calculate_t()
-            print(f'итоговая температура {t} {type(t)} температура выключения охлаждения- {self.t_cool} выключение нагрева -{self.t_heart}')
+            if self.t_cool and self.t_heart: 
+                print('запрет ложного срабатывания одновременного нагрева и охлаждения')
+                self.t_cool = None
+                self.t_heart = None
+                self.gpio_control(config['cold_pin'], False)
+                self.gpio_control(config['heart_pin'], False)
+
+            
             if self.t_cool:
                 if self.t_cool >= t:  # закончить охлаждение
                     print('закончить охлаждение')
@@ -127,7 +137,7 @@ class Main():
     def calculate_t(self):
         t1 = self.therm_1.get_temperature()
         t2 = self.therm_2.get_temperature()
-        print(f'полученные температуры t1 {t1} t2 {t2}')
+        
         self.therm_1.check()
         self.therm_2.check()
         if self.virtual_t == None:
@@ -135,7 +145,7 @@ class Main():
         if self.therm_1.is_active and self.therm_2.is_active:
             t1 = self.therm_1.values[1]
             t2 = self.therm_2.values[1]
-            print(f't1 {self.therm_1.values} t2 {self.therm_2.values} температуры из после проверки')
+            # print(f't1 {self.therm_1.values} t2 {self.therm_2.values} температуры из после проверки')
             if abs(self.virtual_t - t2) > float(config['max_delta']): # отказ t2
                 self.virtual_t = t1
             elif abs(self.virtual_t - t1) > float(config['max_delta']): # отказ t2
@@ -147,10 +157,16 @@ class Main():
             self.virtual_t = t1
         elif self.therm_2.is_active:
             self.virtual_t = t2
+        print(f't1 {t1} t2 {t2} result {self.virtual_t}')
         return self.virtual_t
 
 
 if __name__ == '__main__':
-    m = Main()
-    m.run()
+    try:
+        GPIO.setwarnings(False)
+        GPIO.cleanup()
+        m = Main()
+        m.run()
+    finally:
+        GPIO.cleanup()
 
