@@ -88,27 +88,29 @@ class Main():
             time.sleep(1)
             t = self.calculate_t()
             print(f'итоговая температура {t} {type(t)} температура выключения охлаждения- {self.t_cool} выключение нагрева -{self.t_heart}')
-            if t >= float(config['heat']):
-                print('начинать охлаждение')
-                self.t_cool = float(config['cold']) + 1.0
-                self.gpio_control(config['cold_pin'])
-
-            elif t <= float(config['cold']): # начинать нагрев
-                print('начинать нагрев')
-                self.t_heart = float(config['heat']) - 1.0
-                self.gpio_control(config['heart_pin'])
-
             if self.t_cool:
                 if self.t_cool >= t:  # закончить охлаждение
                     print('закончить охлаждение')
                     self.t_cool = None
                     self.gpio_control(config['cold_pin'], False)
 
-            if self.t_heart:
+            elif self.t_heart:
                 if self.t_heart <= t:  # закончить нагрев
                     print('закончить нагрев')
                     self.t_heart = None
                     self.gpio_control(config['heart_pin'], False)
+            
+            elif t >= float(config['heat']) and not self.t_cool:
+                print('начинать охлаждение')
+                self.t_cool = float(config['cold']) + 1.0
+                self.gpio_control(config['cold_pin'])
+
+            elif t <= float(config['cold']) and not self.t_heart: # начинать нагрев
+                print('начинать нагрев')
+                self.t_heart = float(config['heat']) - 1.0
+                self.gpio_control(config['heart_pin'])
+
+            
 
 
     def gpio_control(self, pin, is_start=True):
