@@ -5,7 +5,7 @@ from collections import defaultdict, deque
 from accessory import get_config
 import os
 import RPi.GPIO as GPIO
-
+GPIO.setwarnings(False)
 
 message_di = defaultdict(int)
 config = get_config()
@@ -36,9 +36,6 @@ class Thermocupe():
     def get_temperature(self):
         with open(self.full_path, 'r') as file:
             res = file.readlines()
-        print('path res')
-        print(self.full_path)
-        print(res)
         if res:
             if 'YES\n' in res[0]:
                 time.sleep(0.2)
@@ -80,34 +77,37 @@ class Main():
         self.therm_1 = Thermocupe(config['t1_name'])
         self.therm_2 = Thermocupe(config['t2_name'])
         self.virtual_t = None
-        self.temp_t = None
+        self.t_cool = None
+        self.t_heart = None
         GPIO.setmode(GPIO.BCM)
 
     def run(self):
-        test_count = 0
         self.therm_1.get_temperature()
         self.therm_2.get_temperature()
-        while test_count<5:
-            test_count += 1
+        while True:
             time.sleep(1)
             t = self.calculate_t()
-            print(f'итоговая температура {t}')
-            if not self.temp_t:
-                if t >= float(config['heat']): # начинать охлаждение
-                    self.temp_t = config['cold'] + 1
-                    self.gpio_control(config['cold_pin'])
+            print(f'итоговая температура {t} {type(t)} температура выключения охлаждения- {self.t_cool} выключение нагрева -{self.t_heart}')
+            if t >= float(config['heat']):
+                print('начинать охлаждение')
+                self.t_cool = float(config['cold']) + 1.0
+                self.gpio_control(config['cold_pin'])
 
-                elif t <= float(config['cold']): # начинать нагрев
-                    self.temp_t = config['heat'] - 1
-                    self.gpio_control(config['heart_pin'])
+            elif t <= float(config['cold']): # начинать нагрев
+                print('начинать нагрев')
+                self.t_heart = float(config['heat']) - 1.0
+                self.gpio_control(config['heart_pin'])
 
-            elif self.temp_t:
-                if self.temp_t <= t:  # закончить охлаждение
-                    self.temp_t = None
+            if self.t_cool:
+                if self.t_cool >= t:  # закончить охлаждение
+                    print('закончить охлаждение')
+                    self.t_cool = None
                     self.gpio_control(config['cold_pin'], False)
 
-                if self.temp_t >= t:  # закончить нагрев
-                    self.temp_t = None
+            if self.t_heart:
+                if self.t_heart <= t:  # закончить нагрев
+                    print('закончить нагрев')
+                    self.t_heart = None
                     self.gpio_control(config['heart_pin'], False)
 
 
@@ -133,6 +133,7 @@ class Main():
         if self.therm_1.is_active and self.therm_2.is_active:
             t1 = self.therm_1.values[1]
             t2 = self.therm_2.values[1]
+            print(f't1 {self.therm_1.values} t2 {self.therm_2.values} температуры из после проверки')
             if abs(self.virtual_t - t2) > float(config['max_delta']): # отказ t2
                 self.virtual_t = t1
             elif abs(self.virtual_t - t1) > float(config['max_delta']): # отказ t2
@@ -150,3 +151,4 @@ class Main():
 if __name__ == '__main__':
     m = Main()
     m.run()
+
