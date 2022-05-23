@@ -8,26 +8,11 @@ import RPi.GPIO as GPIO
 GPIO.setwarnings(False)
 GPIO.cleanup()
 
-message_di = defaultdict(int)
 config = get_config()
 
 
-def messager(name, message, digit):
-    print(f'digit {digit} type {type(digit)}')
-    if digit > 0:
-        if message_di[message] == 0 :
-            message_di[message] +=1
-            print(f'{datetime.now()} {name} {message}')
 
-        else:
-            print(f'это тестовый блок else \n {name} {message}')
-    else:
-        if message_di[message] == 1 :
-            message_di[message] -=1
-            print(f'{datetime.now()} {name} {message}')
-        else:
-            print(f'это тестовый блок else \n {name} {message}')
-    print(message_di)
+    
 
 class Thermocupe():
     def __init__(self, name):
@@ -49,16 +34,16 @@ class Thermocupe():
                     self.values.append(temp_c)
                     return temp_c
                 else:
-                    messager(self.name, 'не найдена позиция температуры', -1)
+                    print(self.name, ' не найдена позиция температуры')
             else:
-                    messager(self.name, 'ошибка чтения файла(не YES)', -1)
+                    print(self.name, ' ошибка чтения файла(не YES)')
         else:
-            messager(self.name, 'не удалось прочитать файл', -1)
+            print(self.name, ' не удалось прочитать файл')
 
     def check(self):
 
         if not any(self.values):
-            messager(self.name, 'два значения None', -1)
+            print(self.name, ' два значения None')
             self.is_active = False
         else:
             self.check_delta()
@@ -69,7 +54,7 @@ class Thermocupe():
     def check_delta(self):
         delta = self.get_delta()
         if delta > float(config['max_delta']):
-            messager(self.name, 'перепад температуры больше максимального разового отключение термопары', -1)
+            print(self.name, ' перепад температуры больше максимального разового отключение термопары')
             self.is_active = False
         else:
             self.is_active = True
@@ -88,7 +73,7 @@ class Main():
         self.therm_1.get_temperature()
         self.therm_2.get_temperature()
         while True:
-            time.sleep(1)
+            time.sleep(2)
             t = self.calculate_t()
             if self.t_cool and self.t_heart: 
                 print('запрет ложного срабатывания одновременного нагрева и охлаждения')
@@ -100,23 +85,23 @@ class Main():
             
             if self.t_cool:
                 if self.t_cool >= t:  # закончить охлаждение
-                    print('закончить охлаждение')
+                    print(f'{datetime.now()} cooling off')
                     self.t_cool = None
                     self.gpio_control(config['cold_pin'], False)
 
             elif self.t_heart:
                 if self.t_heart <= t:  # закончить нагрев
-                    print('закончить нагрев')
+                    print(f'{datetime.now()} heart off')
                     self.t_heart = None
                     self.gpio_control(config['heart_pin'], False)
             
             elif t >= float(config['heat']) and not self.t_cool:
-                print('начинать охлаждение')
+                print(f'{datetime.now()} coold on')
                 self.t_cool = float(config['cold']) + 1.0
                 self.gpio_control(config['cold_pin'])
 
             elif t <= float(config['cold']) and not self.t_heart: # начинать нагрев
-                print('начинать нагрев')
+                print(f'{datetime.now()} heart on')
                 self.t_heart = float(config['heat']) - 1.0
                 self.gpio_control(config['heart_pin'])
 
